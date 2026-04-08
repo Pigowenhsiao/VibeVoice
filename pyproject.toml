@@ -28,8 +28,11 @@ dependencies = [
     "ml-collections",
     "absl-py",
     "gradio",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
     "av",
     "aiortc",
+    "soundfile",
     "librosa"
 ]
 

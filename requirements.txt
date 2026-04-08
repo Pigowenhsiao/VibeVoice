@@ -1,0 +1,23 @@
+# Convenience dependency file for local development and runtime setup.
+# Source of truth for package metadata remains pyproject.toml.
+
+torch
+accelerate==1.6.0
+transformers==4.51.3
+diffusers
+tqdm
+numpy
+scipy
+librosa
+ml-collections
+absl-py
+gradio
+fastapi>=0.115.0
+uvicorn>=0.30.0
+av
+aiortc
+soundfile
+
+# Test dependencies used by app/runtime/tests and desktop verification flow.
+pytest>=8.0
+pytest-asyncio>=0.24.0

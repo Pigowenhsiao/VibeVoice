@@ -100,6 +100,249 @@ python demo/inference_from_file.py --model_path microsoft/VibeVoice-1.5B --txt_p
 python demo/inference_from_file.py --model_path microsoft/VibeVoice-1.5B --txt_path demo/text_examples/2p_music.txt --speaker_names Alice Yunfan
 ```
 
+### Usage 3: Run the Windows desktop app
+
+The repository now includes a native Windows desktop shell under `app/desktop/`.
+
+Important behavior:
+
+- you only launch the desktop app
+- the desktop app manages the local runtime automatically
+- you do **not** manually start a backend process before opening the app
+
+#### Current status
+
+This is the current developer workflow for the Windows app. It is already usable for local testing, but it is not yet packaged as a consumer installer.
+
+#### Prerequisites
+
+Before launching the desktop app, make sure:
+
+1. Python dependencies are installed from this repository
+2. `.NET 8 SDK` is installed on Windows
+3. `ffmpeg` is available in `PATH`
+4. your model checkpoints exist in `checkpoints/` or in another path you plan to load
+5. your speaker prompt audio files exist in `demo/voices/`
+
+#### Start the desktop app
+
+From the repository root on Windows PowerShell:
+
+```powershell
+dotnet run --project app/desktop/VibeVoice.Desktop/VibeVoice.Desktop.csproj
+```
+
+You should see the native desktop window open directly.
+
+The app will:
+
+- check local runtime health
+- auto-start the managed runtime if it is not already available
+- show runtime and model readiness in the UI
+
+## Windows Desktop App Workflow
+
+The desktop shell follows this flow:
+
+1. `Load Model`
+2. `Generation Workspace`
+3. `Job Progress`
+4. `Result / Export`
+5. `Settings`
+
+### 1. Load Model
+
+Use this section first.
+
+What it does:
+
+- shows runtime health
+- shows device and ffmpeg readiness
+- lets you point the app at a checkpoint directory
+- loads the model before generation starts
+
+How to use it:
+
+1. Launch the desktop app
+2. Check the runtime status text
+3. Confirm or edit `Checkpoint Path`
+4. Click `Load Model`
+5. Wait until the model status shows that loading completed
+
+If the path is wrong, model loading will fail and the error will appear in the `Errors` panel.
+
+### 2. Speaker Presets
+
+This section discovers available voice prompts from `demo/voices/`.
+
+What it does:
+
+- lists the detected voice presets
+- lets you assign a prompt file to each speaker slot
+
+How to use it:
+
+1. Choose how many speakers you want to use later in the generation section
+2. Assign matching voices in `Speaker 1` to `Speaker 4`
+3. Only the first `N` selected voices are used, where `N` is the chosen speaker count
+
+If you choose `2` speakers, only `Speaker 1` and `Speaker 2` are used.
+
+### 3. Generation Workspace
+
+This is where you configure the actual generation job.
+
+Fields:
+
+- `Speaker Count`: how many speakers are active, from `1` to `4`
+- `CFG Scale`: guidance scale exposed in V1
+- `Script`: the multi-speaker text content
+
+How to format the script:
+
+- recommended format:
+
+```text
+Speaker 0: Welcome to the show.
+Speaker 1: Thanks, let's get started.
+```
+
+- if a line does not start with `Speaker X:`, the runtime will auto-assign speaker tags in order
+
+How to use it:
+
+1. Set `Speaker Count`
+2. Adjust `CFG Scale` if needed
+3. Paste or type the script
+4. Click `Generate Job`
+
+You can click `Stop Job` while generation is running.
+
+### 4. Job Progress
+
+This section makes the running job visible.
+
+What it shows:
+
+- current job state
+- progress bar
+- progress message
+- elapsed time
+
+The desktop app now consumes typed runtime events for progress and artifact readiness.
+
+That means progress is driven by runtime job events instead of only periodic polling.
+
+### 5. Result / Export
+
+When generation completes successfully, this section becomes the main place to use the output.
+
+What it shows:
+
+- result summary
+- artifact path
+- playback controls
+- export action
+
+Buttons:
+
+- `Play Result`: plays the generated artifact from its saved path
+- `Stop Playback`: stops local playback
+- `Export Copy`: copies the generated artifact into the configured output directory
+
+If generation fails or is cancelled, the result summary will show the failure state instead of a successful artifact message.
+
+### 6. Settings
+
+This section stores desktop-local defaults.
+
+Current V1 settings behavior:
+
+- output directory can be edited
+- runtime diagnostics are visible
+- current defaults can be saved
+
+When you click `Save Current Defaults`, the app persists:
+
+- model path
+- output directory
+- speaker count
+- CFG scale
+- last script
+
+## Files and Output Paths
+
+Current runtime behavior:
+
+- generated artifacts are written under `outputs/jobs/`
+- exported copies are written to the output directory shown in `Settings`
+
+If you do not change the output directory, the desktop app uses its saved local default.
+
+## Typical End-to-End Example
+
+1. Run:
+
+```powershell
+dotnet run --project app/desktop/VibeVoice.Desktop/VibeVoice.Desktop.csproj
+```
+
+2. In `Load Model`, set the checkpoint path and click `Load Model`
+3. In `Speaker Presets`, select prompt audio for the speakers you plan to use
+4. In `Generation Workspace`, set speaker count, review CFG scale, and enter script
+5. Click `Generate Job`
+6. Watch `Job Progress` update until completion
+7. In `Result / Export`, click `Play Result` to audition the output
+8. Click `Export Copy` if you want a copy in your configured output folder
+9. If needed, update the output folder in `Settings` and click `Save Current Defaults`
+
+## Troubleshooting
+
+### The desktop app opens but model load fails
+
+Check:
+
+- the checkpoint path exists
+- the checkpoint directory is compatible with the current runtime code
+- Python dependencies finished installing correctly
+
+### The app cannot find voice presets
+
+Check:
+
+- prompt audio files exist in `demo/voices/`
+- the files use supported audio extensions such as `.wav`, `.mp3`, `.flac`, `.ogg`, `.m4a`, or `.aac`
+
+### Playback does nothing
+
+Check:
+
+- the job actually completed
+- the artifact path is not empty
+- the generated file exists on disk
+
+### Export fails
+
+Check:
+
+- the artifact file still exists
+- the output directory is writable
+- the destination is not blocked by permissions or antivirus
+
+### Runtime does not become ready
+
+Check:
+
+- `python` is available in your environment
+- local dependencies were installed with `pip install -e .`
+- `ffmpeg` is available in `PATH`
+
+## Current Limitations of the Windows App
+
+- this repo currently ships a developer-run desktop workflow, not a packaged installer
+- end-to-end QA with a real large model still needs more validation passes
+- waveform editing, timeline editing, and cloud inference are not part of this Windows V1 flow
+
 ## FAQ
 #### Q1: Is this a pretrained model?
 **A:** Yes, it's a pretrained model without any post-training or benchmark-specific optimizations. In a way, this makes VibeVoice very versatile and fun to use.
